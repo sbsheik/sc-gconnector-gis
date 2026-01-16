@@ -40,6 +40,16 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
+    // If Google Client ID is not configured, skip initialization gracefully
+    if (!GOOGLE_CLIENT_ID) {
+      if (typeof window !== "undefined") {
+        console.warn("Google Client ID not configured. Google authentication features will be disabled.");
+      }
+      setIsLoading(false);
+      setIsInitialized(true);
+      return;
+    }
+
     const handleTokenResponse = async (response: google.accounts.oauth2.TokenResponse) => {
       if (response.access_token) {
         try {
@@ -86,7 +96,7 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
       script.defer = true;
       script.onload = initializeTokenClient;
       script.onerror = () => {
-        setError("Failed to load Google Identity Services");
+        console.warn("Failed to load Google Identity Services. Google authentication features will be disabled.");
         setIsLoading(false);
         setIsInitialized(true);
       };
@@ -95,7 +105,6 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
 
     const initializeTokenClient = () => {
       if (!GOOGLE_CLIENT_ID) {
-        setError("Google Client ID not configured");
         setIsLoading(false);
         setIsInitialized(true);
         return;
@@ -116,7 +125,6 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
         checkExistingAuth();
       } catch (err) {
         console.error("Failed to initialize Google token client:", err);
-        setError("Failed to initialize Google authentication");
         setIsLoading(false);
         setIsInitialized(true);
       }
@@ -155,8 +163,13 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
 
   // POPUP FLOW: Use Google Identity Services token client
   const connectGoogle = useCallback(() => {
+    if (!GOOGLE_CLIENT_ID) {
+      setError("Google Client ID not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your environment variables.");
+      return;
+    }
+
     if (!tokenClientRef.current) {
-      setError("Google authentication not initialized");
+      setError("Google authentication not initialized. Please wait a moment and try again.");
       return;
     }
 
