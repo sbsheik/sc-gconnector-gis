@@ -26,8 +26,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
   const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
 
+  // If Auth0 is not configured, render children without Auth0Provider
+  // This allows the app to build even if Auth0 env vars are missing
   if (!domain || !clientId) {
-    throw new Error("Auth0 domain and client ID are required");
+    if (typeof window !== "undefined") {
+      console.warn("Auth0 domain and client ID are not configured. Auth0 features will be disabled.");
+    }
+    return <>{children}</>;
   }
 
   return (
