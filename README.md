@@ -1,21 +1,22 @@
 # Sitecore Marketplace App - Google Integration
 
-A Next.js application that integrates with Sitecore XM Cloud Marketplace and provides Google OAuth authentication with Google Drive Picker functionality using a popup-based authentication flow.
+A Next.js application that integrates with Sitecore XM Cloud Marketplace and Google OAuth for accessing Google services, including Google Drive Picker functionality.
 
 ## Features
 
 - 🔐 **Sitecore Authentication** - Auth0-based authentication for Sitecore XM Cloud
-- 🌐 **Google OAuth (Popup Flow)** - Google Identity Services with popup-based authentication
-- 📁 **Google Drive Picker** - Native Google Drive file picker integration
-- 📦 **Marketplace SDK** - Full integration with Sitecore Marketplace SDK
-- ⚡ **Next.js 16** - Built with Next.js 16.1.1 and React 19
-- 🎨 **Modern UI** - Tailwind CSS 4 with shadcn/ui components
+- 🌐 **Google OAuth** - Secondary authentication for Google API access
+- 📦 **Marketplace SDK** - Integration with Sitecore Marketplace SDK
+- 📁 **Google Drive Picker** - Select files and folders from Google Drive with hierarchical navigation
+- ⚡ **Next.js 16** - Built with the latest Next.js and React 19
+- 🔄 **Auto-close** - Automatically closes and pushes selected file data to Sitecore Marketplace
 
 ## Prerequisites
 
 - Node.js 18+
 - Sitecore XM Cloud account with Marketplace access
-- Google Cloud Console project with OAuth credentials and Picker API enabled
+- Google Cloud Console project with OAuth credentials
+- Google Picker API enabled in Google Cloud Console
 
 ## Getting Started
 
@@ -42,113 +43,155 @@ NEXT_PUBLIC_SITECORE_ORGANIZATION_ID=org_xxxxxxxxxxxxx
 NEXT_PUBLIC_SITECORE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 # App Configuration
-NEXT_PUBLIC_APP_BASE_URL=https://googlepicker.localhost:3000
+NEXT_PUBLIC_APP_BASE_URL=https://localhost:3000
 
 # Google OAuth Configuration
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 NEXT_PUBLIC_GOOGLE_SCOPES=email profile https://www.googleapis.com/auth/drive
+NEXT_PUBLIC_GOOGLE_AUTO_PROMPT=true
 
-# Google Picker Configuration (required for Drive Picker)
+# Google Picker Configuration
 NEXT_PUBLIC_GOOGLE_API_KEY=your-google-api-key
-NEXT_PUBLIC_GOOGLE_APP_ID=your-google-app-id
+NEXT_PUBLIC_GOOGLE_PICKER_ORIGIN=https://localhost:3000
 ```
 
-### 3. Set Up Google OAuth & Picker API
+### 3. Set Up Google OAuth and Picker API
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
-3. Navigate to **APIs & Services** → **Library**
-4. Enable the following APIs:
+3. Enable the following APIs:
+   - **Google Identity Services API**
    - **Google Picker API**
    - **Google Drive API**
-5. Navigate to **APIs & Services** → **Credentials**
-6. Create **API Key**:
-   - Click **Create Credentials** → **API key**
-   - Restrict the key to the Picker API for security
-   - Copy the key to `NEXT_PUBLIC_GOOGLE_API_KEY`
-7. Create **OAuth Client ID**:
-   - Click **Create Credentials** → **OAuth client ID**
-   - Select **Web application**
-   - Add **Authorized JavaScript origins**:
-     - `https://googlepicker.localhost:3000` (for local development)
-   - Copy the **Client ID** to `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
+4. Navigate to **APIs & Services** → **Credentials**
+5. Create an **API Key** for Google Picker API
+6. Click **Create Credentials** → **OAuth client ID**
+7. Select **Web application**
+8. Add **Authorized JavaScript origins**:
+   - `https://localhost:3000` (for local development)
+   - Your production domain
+9. Add **Authorized redirect URIs**:
+   - `https://localhost:3000` (for local development)
+10. Copy the **Client ID** and **API Key** and add them to your `.env.local`
 
-> **Note:** No callback/redirect URI is required. This app uses Google Identity Services with a popup-based flow, which only requires JavaScript origins to be configured.
-
-### 4. Configure Local Hostname
-
-Add the following entry to your hosts file:
-
-**Windows:** `C:\Windows\System32\drivers\etc\hosts`  
-**macOS/Linux:** `/etc/hosts`
-
-```
-127.0.0.1 googlepicker.localhost
-```
-
-### 5. Run the Development Server
+### 4. Run the Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [https://googlepicker.localhost:3000](https://googlepicker.localhost:3000) with your browser.
+Open [https://localhost:3000](https://localhost:3000) with your browser.
 
-> **Note:** The app runs on HTTPS by default using Next.js experimental HTTPS. You may need to accept the self-signed certificate warning in your browser.
+> **Note:** The app runs on HTTPS by default. You may need to accept the self-signed certificate warning in your browser.
 
 ## Authentication Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Authentication Flow                          │
-│                                                                  │
-│  1. User visits app                                              │
-│           ↓                                                      │
-│  2. Sitecore Auth (Auth0) → Primary login via redirect           │
-│           ↓                                                      │
-│  3. Google Auth → Popup-based OAuth for Google API access        │
-│           ↓                                                      │
-│  4. Marketplace SDK → Initializes connection to XM Cloud         │
-│           ↓                                                      │
-│  5. App Content → Fully accessible with all features             │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     Authentication Flow                      │
+│                                                             │
+│  1. User visits app                                         │
+│           ↓                                                 │
+│  2. Sitecore Auth (Auth0) → Primary login required          │
+│           ↓                                                 │
+│  3. Google Auth → Secondary login for Google API access     │
+│           ↓                                                 │
+│  4. Google Picker → Select files/folders from Google Drive │
+│           ↓                                                 │
+│  5. Data pushed to Marketplace → client.setValue()         │
+│           ↓                                                 │
+│  6. App closes automatically                               │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+## Google Drive Picker
+
+The Google Picker component provides a user-friendly interface to select files and folders from Google Drive.
+
+### Features
+
+- **Tab 1 (Drive)**: Hierarchical navigation - shows root level folders and files, navigates into folders when selected
+- **Tab 2 (Spreadsheet)**: Google Sheets files only
+- **Tab 3 (Presentation)**: Google Slides files only
+- **Tab 4 (Forms)**: Google Forms files only
+- **Multi-select**: Support for selecting multiple files
+- **JSON Display**: Shows selected file data in JSON format
+- **Auto-close**: Automatically closes and pushes data to Sitecore Marketplace
+
+### PickedFile Interface
+
+```typescript
+export interface PickedFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  url: string;
+  iconUrl: string;
+  previewUrl?: string;
+  sizeBytes?: number;
+  lastEditedUtc?: number;
+}
+```
+
+### Usage
+
+```tsx
+import { GooglePicker } from "@/components/google-picker/google-picker";
+
+function MyComponent() {
+  return (
+    <GooglePicker 
+      onFilePicked={(files) => console.log("Files picked:", files)}
+      multiSelect={true}
+    />
+  );
+}
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onFilePicked` | `(files: PickedFile[]) => void` | - | Callback when files are selected |
+| `multiSelect` | `boolean` | `false` | Enable multi-file selection |
+| `title` | `string` | `"Select a file from Google Drive"` | Picker dialog title |
+| `autoUpdateField` | `boolean` | `false` | Auto-update Sitecore field (legacy) |
+| `fieldId` | `string` | - | Sitecore field ID (legacy) |
+| `fieldName` | `string` | - | Sitecore field name (legacy) |
+
+### Data Flow
+
+When a file or folder is selected:
+
+1. **File data is collected** in `PickedFile` format
+2. **JSON is generated** (single object for one file, array for multiple)
+3. **Data is pushed** to Sitecore Marketplace via `client.setValue(jsonString, true)`
+4. **App closes automatically** via `client.closeApp()`
 
 ## Project Structure
 
 ```
 google-integration/
 ├── app/
-│   ├── api/
-│   │   └── sites/languages/           # XMC API proxy route
-│   ├── layout.tsx                     # Root layout with auth providers
-│   ├── page.tsx                       # Main demo page
-│   └── globals.css                    # Global styles
+│   ├── api/                    # API routes
+│   ├── layout.tsx              # Root layout with providers
+│   └── page.tsx                # Main page
 ├── components/
+│   ├── google-picker/
+│   │   ├── google-connect-button.tsx  # Google OAuth connect button
+│   │   └── google-picker.tsx         # Google Drive Picker component
 │   ├── providers/
-│   │   ├── auth.tsx                   # Sitecore Auth0 provider
-│   │   ├── google-auth.tsx            # Google OAuth provider (popup flow)
-│   │   └── marketplace.tsx            # Marketplace SDK provider
-│   ├── examples/
-│   │   ├── built-in-auth/             # SDK with built-in auth examples
-│   │   └── custom-auth/               # Custom auth examples (API route, server action)
-│   ├── ui/                            # shadcn/ui components
-│   ├── google-connect-button.tsx      # Google account connection button
-│   ├── google-picker.tsx              # Google Drive file picker
-│   └── require-google-auth.tsx        # Auth gate component
-├── lib/
-│   ├── icon.tsx                       # Icon utilities
-│   └── utils.ts                       # Helper utilities
+│   │   ├── auth.tsx            # Sitecore Auth0 provider
+│   │   ├── google-auth.tsx     # Google OAuth provider
+│   │   └── marketplace.tsx    # Marketplace SDK provider
+│   ├── examples/               # SDK usage examples
+│   └── ui/                     # UI components (shadcn/ui)
 ├── types/
-│   └── google.d.ts                    # Google Identity Services TypeScript types
-└── certificates/                      # SSL certificates (auto-generated)
+│   └── google.d.ts             # Google Identity Services & Picker types
+└── certificates/               # SSL certificates (auto-generated)
 ```
 
-## Components
-
-### GoogleAuthProvider
-
-Manages Google OAuth state and provides authentication functions via popup flow.
+## Using Google Auth in Components
 
 ```tsx
 import { useGoogleAuth } from "@/components/providers/google-auth";
@@ -156,77 +199,33 @@ import { useGoogleAuth } from "@/components/providers/google-auth";
 function MyComponent() {
   const { 
     isConnected,      // boolean - is Google connected?
-    isLoading,        // boolean - auth in progress?
-    isInitialized,    // boolean - provider ready?
-    user,             // { id, email, name, picture } | null
+    user,             // { id, email, name, picture }
     accessToken,      // Google access token for API calls
-    connectGoogle,    // function - trigger Google login popup
-    disconnectGoogle, // function - revoke token and disconnect
-    error             // string | null - error message
+    connectGoogle,    // function to trigger Google login
+    disconnectGoogle  // function to disconnect
   } = useGoogleAuth();
 
+  // Use accessToken to call Google APIs
   if (isConnected && accessToken) {
-    // Make requests to Google APIs (Drive, Calendar, etc.)
+    // Make requests to Google Drive, Calendar, Sheets, etc.
   }
 }
 ```
 
-### GooglePicker
-
-A ready-to-use Google Drive file picker component.
+## Using Marketplace Client
 
 ```tsx
-import { GooglePicker } from "@/components/google-picker";
+import { useMarketplaceClient } from "@/components/providers/marketplace";
 
 function MyComponent() {
-  const handleFilePicked = (files) => {
-    // files: Array<{ id, name, mimeType, url, iconUrl, sizeBytes?, lastEditedUtc? }>
-    console.log("Selected files:", files);
+  const client = useMarketplaceClient();
+  
+  // Push data to Sitecore Marketplace
+  const saveData = (data: any) => {
+    const jsonString = JSON.stringify(data, null, 2);
+    client.setValue(jsonString, true);
+    client.closeApp(); // Close the app after saving
   };
-
-  return (
-    <GooglePicker 
-      onFilePicked={handleFilePicked}
-      multiSelect={true}                    // Allow multiple file selection
-      viewId="DOCS"                         // Filter by file type
-      title="Select files from Drive"       // Picker dialog title
-    />
-  );
-}
-```
-
-**Available `viewId` options:**
-- `DOCS` - All Google Docs
-- `DOCUMENTS` - Google Documents only
-- `SPREADSHEETS` - Google Sheets only
-- `PRESENTATIONS` - Google Slides only
-- `PDFS` - PDF files only
-- `FOLDERS` - Folders only
-- `DOCS_IMAGES` - Images only
-- `DOCS_VIDEOS` - Videos only
-
-### RequireGoogleAuth
-
-A wrapper component that enforces Google authentication before rendering children.
-
-```tsx
-import { RequireGoogleAuth } from "@/components/require-google-auth";
-
-// In your layout or page:
-<RequireGoogleAuth>
-  <YourProtectedContent />
-</RequireGoogleAuth>
-```
-
-### GoogleConnectButton
-
-A pre-styled button for connecting/disconnecting Google accounts.
-
-```tsx
-import { GoogleConnectButton } from "@/components/google-connect-button";
-
-function MyComponent() {
-  return <GoogleConnectButton />;
 }
 ```
 
@@ -245,70 +244,41 @@ To make Google login optional instead of required, update `app/layout.tsx`:
 </AuthProvider>
 ```
 
-### Add More Google Scopes
+### Disable Auto-Prompt
 
-Update the scopes in `.env.local` for additional API access:
+Set in `.env.local`:
 
 ```env
-# Example: Add Calendar and Gmail access
-NEXT_PUBLIC_GOOGLE_SCOPES=email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly
+NEXT_PUBLIC_GOOGLE_AUTO_PROMPT=false
 ```
 
-## SDK Usage Examples
+### Add More Google Scopes
 
-The app includes several example components demonstrating Marketplace SDK usage:
+For additional Google API access, update the scopes:
 
-| Example | Location | Description |
-|---------|----------|-------------|
-| Application Context | `components/examples/built-in-auth/application-context.tsx` | Display current app context |
-| List Languages (Client SDK) | `components/examples/built-in-auth/with-xmc/list-languages.tsx` | Fetch languages using built-in auth |
-| List Languages (API Route) | `components/examples/custom-auth/with-api-route/list-languages.tsx` | Fetch via custom API route |
-| List Languages (Server Action) | `components/examples/custom-auth/with-server-action/list-languages.tsx` | Fetch via server action |
+```env
+# Example: Add Google Drive and Calendar access
+NEXT_PUBLIC_GOOGLE_SCOPES=email profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.readonly
+```
+
+### Configure Picker Origin
+
+Set the origin for Google Picker API:
+
+```env
+NEXT_PUBLIC_GOOGLE_PICKER_ORIGIN=https://your-domain.com
+```
+
+If not set, it defaults to `window.location.origin`.
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server with HTTPS on `googlepicker.localhost:3000` |
+| `npm run dev` | Start development server with HTTPS |
 | `npm run build` | Build for production |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
-
-## Tech Stack
-
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Next.js | 16.1.1 | React framework |
-| React | 19.2.3 | UI library |
-| Tailwind CSS | 4.x | Styling |
-| Auth0 React | 2.11.0 | Sitecore authentication |
-| Sitecore Marketplace SDK | 0.3.x | XM Cloud integration |
-| shadcn/ui | Latest | UI components |
-| Lucide React | 0.562.0 | Icons |
-
-## Troubleshooting
-
-### Google Picker Not Loading
-
-- Ensure `NEXT_PUBLIC_GOOGLE_API_KEY` is set
-- Verify the Picker API is enabled in Google Cloud Console
-- Check that the API key is not restricted to different domains
-
-### OAuth Popup Blocked
-
-- Ensure popups are allowed for the domain
-- The popup must be triggered by a user action (click)
-
-### "Failed to initialize Google authentication"
-
-- Verify `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is correct
-- Check that JavaScript origins include your development URL
-- Ensure you're accessing via the correct hostname (`googlepicker.localhost`)
-
-### Marketplace SDK Connection Error
-
-- The app must be loaded within a Sitecore Marketplace parent window
-- Check that extension points are properly configured in your Marketplace app settings
 
 ## Learn More
 
