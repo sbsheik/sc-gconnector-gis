@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               `frame-ancestors 'self' ${allowedParentDomains.join(" ")} ${trustedDomains}`,
-              `frame-src 'self' ${trustedDomains}`,
+              `frame-src 'self' ${allowedParentDomains.join(" ")} ${trustedDomains}`,
               `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${trustedDomains}`,
               `connect-src 'self' ${trustedDomains}`,
               `img-src 'self' data: blob: ${trustedDomains}`,

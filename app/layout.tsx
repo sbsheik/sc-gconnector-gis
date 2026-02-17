@@ -4,7 +4,6 @@ import "./globals.css";
 import { MarketplaceProvider } from "@/components/providers/marketplace";
 import { AuthProvider } from "@/components/providers/auth";
 import { GoogleAuthProvider } from "@/components/providers/google-auth";
-import { RequireGoogleAuth } from "@/components/require-google-auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,9 +32,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <GoogleAuthProvider>
-            <RequireGoogleAuth>
-              <MarketplaceProvider>{children}</MarketplaceProvider>
-            </RequireGoogleAuth>
+            <MarketplaceProvider>{children}</MarketplaceProvider>
           </GoogleAuthProvider>
         </AuthProvider>
       </body>

@@ -1,12 +1,13 @@
 "use client";
 
 import { ApplicationContext } from "@/components/examples/built-in-auth/application-context";
-import { ListLanguagesFromClientSdk } from "@/components/examples/built-in-auth/with-xmc/list-languages";
-import { ListLanguagesFromApiRoute } from "@/components/examples/custom-auth/with-api-route/list-languages";
-import { ListLanguagesFromServerAction } from "@/components/examples/custom-auth/with-server-action/list-languages";
+// import { ListLanguagesFromClientSdk } from "@/components/examples/built-in-auth/with-xmc/list-languages";
+// import { ListLanguagesFromApiRoute } from "@/components/examples/custom-auth/with-api-route/list-languages";
+// import { ListLanguagesFromServerAction } from "@/components/examples/custom-auth/with-server-action/list-languages";
 import { Separator } from "@/components/ui/separator";
-import { GoogleConnectButton } from "@/components/google-connect-button";
-import { GooglePicker } from "@/components/google-picker";
+import { GoogleConnectButton } from "@/components/google-picker/google-connect-button";
+import { GooglePicker } from "@/components/google-picker/google-picker";
+
 
 function ServerSideExamples() {
   return (
@@ -36,7 +37,7 @@ function ServerSideExamples() {
 
       <Separator />
 
-      <div className="space-y-6">
+      {/* <div className="space-y-6">
         <h2 className="text-2xl font-semibold">Built-in Auth Examples</h2>
         <div className="grid gap-6">
           <ListLanguagesFromClientSdk />
@@ -50,7 +51,9 @@ function ServerSideExamples() {
           <ListLanguagesFromServerAction />
         </div>
       </div>
-    </div>
+    
+      <Separator /> */}
+     </div>
   );
 }
 
