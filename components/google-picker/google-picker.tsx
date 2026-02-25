@@ -251,37 +251,42 @@ export const GooglePicker = ({
     }
 
     try {
-      // Tab 1: Drive - Shows only root level folders and files initially
-      // When a folder is selected/clicked, it navigates into that folder showing secondary level
-      const driveView = new google.picker.DocsView(google.picker.ViewId.DOCS)
+      // My Drive tab: one tab with both owned and shared (ViewGroup combines both views)
+      const myDriveView = new google.picker.DocsView(google.picker.ViewId.DOCS)
         .setIncludeFolders(true)
         .setSelectFolderEnabled(true)
-        .setOwnedByMe(true); // Start with user's own files at root level
 
-      // Tab 2: Spreadsheet - Only Google Sheets files (no folders)
+ 
+
+
+      // Tab 2: Documents - Google Docs (owned)
+      const documentsView = new google.picker.DocsView(google.picker.ViewId.DOCUMENTS)
+        .setIncludeFolders(true)
+
+
+      // Tab 3: Spreadsheets - Google Sheets (owned)
       const spreadsheetView = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS)
-        .setIncludeFolders(false)
-        .setSelectFolderEnabled(false);
+        .setIncludeFolders(true)
 
-      // Tab 3: Presentation - Only Google Slides files (no folders)
+      // Tab 4: Presentations - Google Slides (owned)
       const presentationView = new google.picker.DocsView(google.picker.ViewId.PRESENTATIONS)
-        .setIncludeFolders(false)
-        .setSelectFolderEnabled(false);
+        .setIncludeFolders(true)
 
-      // Tab 4: Forms - Only Google Forms files (no folders)
+      // Tab 5: Forms - Google Forms (owned)
       const formsView = new google.picker.DocsView(google.picker.ViewId.FORMS)
-        .setIncludeFolders(false)
-        .setSelectFolderEnabled(false);
+        .setIncludeFolders(true)
 
-      // Build picker with separate tabs for each type
+
+      // Build picker: single My Drive tab (owner + shared), then Documents, Spreadsheets, Presentations, Forms
       const pickerBuilder = new google.picker.PickerBuilder()
         .setTitle(title)
         .setOAuthToken(accessToken)
         .setDeveloperKey(GOOGLE_API_KEY)
-        .addView(driveView) // Tab 1: Drive - shows folders and files, navigates into folders
-        .addView(spreadsheetView) // Tab 2: Spreadsheet - only Sheets files
-        .addView(presentationView) // Tab 3: Presentation - only Slides files
-        .addView(formsView) // Tab 4: Forms - only Forms files
+        .addView(myDriveView)
+        .addView(documentsView)
+        .addView(spreadsheetView)
+        .addView(presentationView)
+        .addView(formsView)
         .setOrigin(GOOGLE_PICKER_ORIGIN)
         .setCallback(pickerCallback);
 
@@ -354,6 +359,7 @@ export const GooglePicker = ({
                       key={file.id || index}
                       className="flex items-start gap-3 p-3 border rounded-lg"
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- dynamic external icon URL from Google */}
                       <img
                         src={file.iconUrl}
                         alt={file.name}

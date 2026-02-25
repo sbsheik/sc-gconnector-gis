@@ -30,6 +30,7 @@ export const GoogleConnectButton = () => {
             {user.picture && (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Picture:</span>
+                {/* eslint-disable-next-line @next/next/no-img-element -- external user avatar URL */}
                 <img
                   src={user.picture}
                   alt={user.name || "User"}
