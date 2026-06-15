@@ -48,11 +48,19 @@ NEXT_PUBLIC_APP_BASE_URL=https://localhost:3000
 # Google OAuth Configuration
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 NEXT_PUBLIC_GOOGLE_SCOPES=email profile https://www.googleapis.com/auth/drive
-NEXT_PUBLIC_GOOGLE_AUTO_PROMPT=true
 
 # Google Picker Configuration
 NEXT_PUBLIC_GOOGLE_API_KEY=your-google-api-key
 NEXT_PUBLIC_GOOGLE_PICKER_ORIGIN=https://localhost:3000
+
+# Google Workspace Admin SDK (server-side)
+# IMPORTANT: these must NOT be NEXT_PUBLIC_ vars.
+# Provide either raw JSON or base64 JSON for a service account that has Domain-Wide Delegation enabled.
+GOOGLE_WORKSPACE_ADMIN_SUBJECT=admin@your-domain.com
+GOOGLE_WORKSPACE_CUSTOMER_ID=my_customer
+GOOGLE_WORKSPACE_SERVICE_ACCOUNT_JSON_BASE64=base64-of-service-account-json
+# or:
+# GOOGLE_WORKSPACE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 ```
 
 ### 3. Set Up Google OAuth and Picker API
@@ -63,6 +71,7 @@ NEXT_PUBLIC_GOOGLE_PICKER_ORIGIN=https://localhost:3000
    - **Google Identity Services API**
    - **Google Picker API**
    - **Google Drive API**
+   - **Admin SDK API** (required for Workspace directory Users/Groups/Org Units)
 4. Navigate to **APIs & Services** → **Credentials**
 5. Create an **API Key** for Google Picker API
 6. Click **Create Credentials** → **OAuth client ID**
@@ -118,6 +127,25 @@ The Google Picker component provides a user-friendly interface to select files a
 - **JSON Display**: Shows selected file data in JSON format
 - **Auto-close**: Automatically closes and pushes data to Sitecore Marketplace
 
+## Google Workspace Directory (Admin SDK)
+
+This project includes a `GoogleAdminDirectorySelector` component that can list/select:
+
+- **Users**
+- **Groups**
+- **Org Units** (directory “folders”)
+
+### Requirements
+
+- **Enable API**: Admin SDK API
+- **Service account**: create a service account and enable **Domain-wide delegation**
+- **Admin console**: grant the service account access to these scopes:
+  - `https://www.googleapis.com/auth/admin.directory.user.readonly`
+  - `https://www.googleapis.com/auth/admin.directory.group.readonly`
+  - `https://www.googleapis.com/auth/admin.directory.orgunit.readonly`
+- **Env vars** (server-side): set `GOOGLE_WORKSPACE_ADMIN_SUBJECT` to an admin email in your Workspace domain, and provide the
+  service account JSON via `GOOGLE_WORKSPACE_SERVICE_ACCOUNT_JSON` or `GOOGLE_WORKSPACE_SERVICE_ACCOUNT_JSON_BASE64`.
+
 ### PickedFile Interface
 
 ```typescript
@@ -136,7 +164,7 @@ export interface PickedFile {
 ### Usage
 
 ```tsx
-import { GooglePicker } from "@/components/google-picker/google-picker";
+import { GooglePicker } from "@/components/google-picker";
 
 function MyComponent() {
   return (
@@ -178,8 +206,18 @@ google-integration/
 │   └── page.tsx                # Main page
 ├── components/
 │   ├── google-picker/
-│   │   ├── google-connect-button.tsx  # Google OAuth connect button
-│   │   └── google-picker.tsx         # Google Drive Picker component
+│   │   ├── index.ts                          # Barrel exports
+│   │   ├── google-connect-button.tsx         # Shared: Google OAuth connect
+│   │   ├── use-marketplace-value.ts          # Shared: Marketplace setValue helper
+│   │   ├── selection-preview.tsx             # Shared: JSON preview + Select button
+│   │   ├── drive-picker/
+│   │   │   └── google-picker.tsx             # Google Drive Picker
+│   │   └── admin-picker/                     # Workspace Directory (Admin SDK)
+│   │       ├── google-admin-directory-selector.tsx
+│   │       ├── types.ts
+│   │       ├── utils.ts
+│   │       ├── api.ts
+│   │       └── directory-tiles.tsx
 │   ├── providers/
 │   │   ├── auth.tsx            # Sitecore Auth0 provider
 │   │   ├── google-auth.tsx     # Google OAuth provider
@@ -242,14 +280,6 @@ To make Google login optional instead of required, update `app/layout.tsx`:
     <MarketplaceProvider>{children}</MarketplaceProvider>
   </GoogleAuthProvider>
 </AuthProvider>
-```
-
-### Disable Auto-Prompt
-
-Set in `.env.local`:
-
-```env
-NEXT_PUBLIC_GOOGLE_AUTO_PROMPT=false
 ```
 
 ### Add More Google Scopes

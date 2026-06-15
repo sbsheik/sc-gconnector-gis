@@ -15,6 +15,7 @@ interface GoogleAuthContextType {
   isInitialized: boolean;
   user: GoogleUser | null;
   accessToken: string | null;
+  grantedScopes: string[];
   connectGoogle: () => void;
   disconnectGoogle: () => void;
   error: string | null;
@@ -31,6 +32,7 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
   const [isInitialized, setIsInitialized] = useState(false);
   const [user, setUser] = useState<GoogleUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [grantedScopes, setGrantedScopes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const tokenClientRef = useRef<google.accounts.oauth2.TokenClient | null>(null);
   const hasInitialized = useRef(false);
@@ -60,9 +62,15 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
             setUser(googleUser);
             setIsConnected(true);
             setError(null);
+            const scopes = (response.scope || "")
+              .split(" ")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            setGrantedScopes(scopes);
 
             localStorage.setItem("google_access_token", response.access_token);
             localStorage.setItem("google_user", JSON.stringify(googleUser));
+            localStorage.setItem("google_granted_scopes", JSON.stringify(scopes));
           } else {
             throw new Error("Failed to fetch user info");
           }
@@ -125,6 +133,7 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
     const checkExistingAuth = async () => {
       const storedToken = localStorage.getItem("google_access_token");
       const storedUser = localStorage.getItem("google_user");
+      const storedScopes = localStorage.getItem("google_granted_scopes");
 
       if (storedToken && storedUser) {
         try {
@@ -136,13 +145,23 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
             setAccessToken(storedToken);
             setUser(JSON.parse(storedUser));
             setIsConnected(true);
+            if (storedScopes) {
+              try {
+                const parsed = JSON.parse(storedScopes);
+                if (Array.isArray(parsed)) setGrantedScopes(parsed.filter((s) => typeof s === "string"));
+              } catch {
+                // ignore
+              }
+            }
           } else {
             localStorage.removeItem("google_access_token");
             localStorage.removeItem("google_user");
+            localStorage.removeItem("google_granted_scopes");
           }
         } catch {
           localStorage.removeItem("google_access_token");
           localStorage.removeItem("google_user");
+          localStorage.removeItem("google_granted_scopes");
         }
       }
 
@@ -163,8 +182,8 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
     setIsLoading(true);
     setError(null);
 
-    // Request access token - opens popup
-    tokenClientRef.current.requestAccessToken({ prompt: "consent" });
+    // select_account: always show Google account chooser (not just the logged-in browser account)
+    tokenClientRef.current.requestAccessToken({ prompt: "select_account consent" });
   }, []);
 
   const disconnectGoogle = useCallback(() => {
@@ -178,8 +197,10 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
     setAccessToken(null);
     setUser(null);
     setIsConnected(false);
+    setGrantedScopes([]);
     localStorage.removeItem("google_access_token");
     localStorage.removeItem("google_user");
+    localStorage.removeItem("google_granted_scopes");
   }, [accessToken]);
 
   return (
@@ -190,6 +211,7 @@ export const GoogleAuthProvider = ({ children }: { children: React.ReactNode }) 
         isInitialized,
         user,
         accessToken,
+        grantedScopes,
         connectGoogle,
         disconnectGoogle,
         error,

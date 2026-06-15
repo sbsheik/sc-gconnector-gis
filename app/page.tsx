@@ -5,8 +5,11 @@ import { ApplicationContext } from "@/components/examples/built-in-auth/applicat
 // import { ListLanguagesFromApiRoute } from "@/components/examples/custom-auth/with-api-route/list-languages";
 // import { ListLanguagesFromServerAction } from "@/components/examples/custom-auth/with-server-action/list-languages";
 import { Separator } from "@/components/ui/separator";
-import { GoogleConnectButton } from "@/components/google-picker/google-connect-button";
-import { GooglePicker } from "@/components/google-picker/google-picker";
+import {
+  GoogleConnectButton,
+  GooglePicker,
+  GoogleAdminDirectorySelector,
+} from "@/components/google-picker";
 
 
 function ServerSideExamples() {
@@ -29,6 +32,10 @@ function ServerSideExamples() {
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold">Google Integration</h2>
         <GoogleConnectButton />
+        <GoogleAdminDirectorySelector
+          onSelected={(items) => console.log("Directory selected:", items)}
+          multiSelect={true}
+        />
         <GooglePicker 
           onFilePicked={(files) => console.log("Files picked:", files)}
           multiSelect={true}

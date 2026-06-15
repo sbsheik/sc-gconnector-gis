@@ -20,18 +20,30 @@ interface ClientSDKProviderProps {
 const ClientSDKContext = createContext<ClientSDK | null>(null);
 const AppContextContext = createContext<ApplicationContext | null>(null);
 
+const INIT_TIMEOUT_MS = 15_000;
+const EMPTY_APP_CONTEXT = {} as ApplicationContext;
+
+function isStandaloneWindow() {
+  return typeof window !== "undefined" && window.self === window.top;
+}
+
+function shouldSkipMarketplaceSdk() {
+  return process.env.NEXT_PUBLIC_SKIP_MARKETPLACE_SDK === "true" || isStandaloneWindow();
+}
+
 export const MarketplaceProvider: React.FC<ClientSDKProviderProps> = ({
   children,
 }) => {
   const [client, setClient] = useState<ClientSDK | null>(null);
   const [appContext, setAppContext] = useState<ApplicationContext | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [standalone, setStandalone] = useState(false);
 
   useEffect(() => {
     if (client) {
       client.query("application.context").then((res) => {
-        if (res && res.data) {
+        if (res?.data) {
           setAppContext(res.data);
           console.log("appContext", res.data);
         }
@@ -40,28 +52,53 @@ export const MarketplaceProvider: React.FC<ClientSDKProviderProps> = ({
   }, [client]);
 
   useEffect(() => {
+    if (shouldSkipMarketplaceSdk()) {
+      setStandalone(true);
+      setLoading(false);
+      return;
+    }
+
     const init = async () => {
       const config = {
         target: window.parent,
         modules: [XMC],
       };
+
       try {
         setLoading(true);
-        const client = await ClientSDK.init(config);
-        setClient(client);
-      } catch (error) {
-        console.error("Error initializing client SDK", error);
-        setError("Error initializing client SDK");
+        const sdkClient = await Promise.race([
+          ClientSDK.init(config),
+          new Promise<never>((_, reject) => {
+            window.setTimeout(
+              () => reject(new Error("Marketplace SDK handshake timed out")),
+              INIT_TIMEOUT_MS
+            );
+          }),
+        ]);
+        setClient(sdkClient);
+      } catch (err) {
+        console.error("Error initializing client SDK", err);
+        setError(err instanceof Error ? err.message : "Error initializing client SDK");
       } finally {
         setLoading(false);
       }
     };
 
-    init();
+    void init();
   }, []);
 
   if (loading) {
     return <div>Attempting to connect to Sitecore Marketplace...</div>;
+  }
+
+  if (standalone) {
+    return (
+      <ClientSDKContext.Provider value={null}>
+        <AppContextContext.Provider value={EMPTY_APP_CONTEXT}>
+          {children}
+        </AppContextContext.Provider>
+      </ClientSDKContext.Provider>
+    );
   }
 
   if (error) {
@@ -71,34 +108,28 @@ export const MarketplaceProvider: React.FC<ClientSDKProviderProps> = ({
         <div>{error}</div>
         <div>
           Please check if the client SDK is loaded inside Sitecore Marketplace
-          parent window and you have properly set your app's extention points.
+          parent window and you have properly set your app&apos;s extension points.
         </div>
       </div>
     );
   }
 
-  if (!client) {
-    return null;
-  }
-
-  if (!appContext) {
-    return null;
-  }
-
   return (
     <ClientSDKContext.Provider value={client}>
-      <AppContextContext.Provider value={appContext}>
+      <AppContextContext.Provider value={appContext ?? EMPTY_APP_CONTEXT}>
         {children}
       </AppContextContext.Provider>
     </ClientSDKContext.Provider>
   );
 };
 
+export const useOptionalMarketplaceClient = () => useContext(ClientSDKContext);
+
 export const useMarketplaceClient = () => {
-  const context = useContext(ClientSDKContext);
+  const context = useOptionalMarketplaceClient();
   if (!context) {
     throw new Error(
-      "useMarketplaceClient must be used within a ClientSDKProvider"
+      "useMarketplaceClient must be used within a ClientSDKProvider with an active Marketplace connection"
     );
   }
   return context;

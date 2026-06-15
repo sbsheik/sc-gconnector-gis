@@ -6,12 +6,15 @@ import {
   GetTokenSilentlyOptions,
   useAuth0,
   Auth0ContextInterface,
-  withAuthenticationRequired,
 } from "@auth0/auth0-react";
 
-export const WithAuth = withAuthenticationRequired(
-  ({ children }: { children: React.ReactNode }) => children
-);
+// Disabled: withAuthenticationRequired triggers silent iframe auth against auth.sitecorecloud.io,
+// which blocks framing via frame-ancestors 'none'. Re-enable when using refresh tokens or
+// custom-auth examples that require login on load.
+// import { withAuthenticationRequired } from "@auth0/auth0-react";
+// export const WithAuth = withAuthenticationRequired(
+//   ({ children }: { children: React.ReactNode }) => children
+// );
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const authParams = {
@@ -43,7 +46,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         ...authParams,
       }}
     >
-      <WithAuth>{children}</WithAuth>
+      {children}
+      {/* <WithAuth>{children}</WithAuth> */}
     </Auth0Provider>
   );
 };
